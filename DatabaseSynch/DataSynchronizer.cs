@@ -17,65 +17,86 @@ namespace DatabaseSynch
             string serverConnectionString,
             string clientConnectionString)
         {
-            using (SqlConnection serverConnection = new
-                SqlConnection(serverConnectionString))
+            try
             {
-                using (SqlConnection clientConnection = new
-                    SqlConnection(clientConnectionString))
+                using (SqlConnection serverConnection = new
+                    SqlConnection(serverConnectionString))
                 {
-                    DbSyncScopeDescription scopeDescription = new
-                        DbSyncScopeDescription(table);
-                    DbSyncTableDescription tableDescription =
-                        SqlSyncDescriptionBuilder.GetDescriptionForTable(table,
-                            serverConnection);
-                    scopeDescription.Tables.Add(tableDescription);
-                    SqlSyncScopeProvisioning serverProvision = new
-                        SqlSyncScopeProvisioning(serverConnection,
-                            scopeDescription);
-                    serverProvision.Apply();
-                    SqlSyncScopeProvisioning clientProvision = new
-                        SqlSyncScopeProvisioning(clientConnection,
-                           scopeDescription);
-                    clientProvision.Apply();
+                    using (SqlConnection clientConnection = new
+                        SqlConnection(clientConnectionString))
+                    {
+                        DbSyncScopeDescription scopeDescription = new
+                            DbSyncScopeDescription(table);
+                        DbSyncTableDescription tableDescription =
+                            SqlSyncDescriptionBuilder.GetDescriptionForTable(table,
+                                serverConnection);
+                        scopeDescription.Tables.Add(tableDescription);
+                        SqlSyncScopeProvisioning serverProvision = new
+                            SqlSyncScopeProvisioning(serverConnection,
+                                scopeDescription);
+                        serverProvision.Apply();
+                        SqlSyncScopeProvisioning clientProvision = new
+                            SqlSyncScopeProvisioning(clientConnection,
+                               scopeDescription);
+                        clientProvision.Apply();
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Common.WriteLog(System.DateTime.Now.ToString() + ": " + ex.ToString());
             }
         }
 
         public static void Synchronize(string tableName,
             string serverConnectionString, string clientConnectionString)
         {
-            Initialize(tableName, serverConnectionString, clientConnectionString);
-            Synchronize(tableName, serverConnectionString,
-                clientConnectionString, SyncDirectionOrder.DownloadAndUpload);
-            CleanUp(tableName, serverConnectionString, clientConnectionString);
+            try
+            {
+                Initialize(tableName, serverConnectionString, clientConnectionString);
+                Synchronize(tableName, serverConnectionString,
+                    clientConnectionString, SyncDirectionOrder.UploadAndDownload);
+                CleanUp(tableName, serverConnectionString, clientConnectionString);
+            }
+            catch (Exception ex)
+            {
+                Common.WriteLog(System.DateTime.Now.ToString() + ": " + ex.ToString());
+            }
         }
 
         private static void Synchronize(string scopeName,
             string serverConnectionString,
             string clientConnectionString, SyncDirectionOrder syncDirectionOrder)
         {
-            using (SqlConnection serverConnection = new
-                SqlConnection(serverConnectionString))
+            try
             {
-                using (SqlConnection clientConnection
-                    = new SqlConnection(clientConnectionString))
+                using (SqlConnection serverConnection = new
+                    SqlConnection(serverConnectionString))
                 {
-                    var agent = new SyncOrchestrator
+                    using (SqlConnection clientConnection
+                        = new SqlConnection(clientConnectionString))
                     {
-                        LocalProvider = new
-                            SqlSyncProvider(scopeName, clientConnection),
-                        RemoteProvider = new SqlSyncProvider(scopeName, serverConnection),
-                        Direction = syncDirectionOrder
-                    };
-                    (agent.RemoteProvider as RelationalSyncProvider).SyncProgress +=
-                        new EventHandler<DbSyncProgressEventArgs>
-                        (dbProvider_SyncProgress);
-                    (agent.LocalProvider as RelationalSyncProvider).ApplyChangeFailed +=
-                        new EventHandler<DbApplyChangeFailedEventArgs>(dbProvider_SyncProcessFailed);
-                    (agent.RemoteProvider as RelationalSyncProvider).ApplyChangeFailed += new EventHandler<DbApplyChangeFailedEventArgs>
-                    (dbProvider_SyncProcessFailed);
-                    agent.Synchronize();
+                        var agent = new SyncOrchestrator
+                        {
+                            LocalProvider = new
+                                SqlSyncProvider(scopeName, clientConnection),
+                            RemoteProvider = new SqlSyncProvider(scopeName, serverConnection),
+                            Direction = syncDirectionOrder
+                        };
+                        (agent.RemoteProvider as RelationalSyncProvider).SyncProgress +=
+                            new EventHandler<DbSyncProgressEventArgs>
+                            (dbProvider_SyncProgress);
+                        (agent.LocalProvider as RelationalSyncProvider).ApplyChangeFailed +=
+                            new EventHandler<DbApplyChangeFailedEventArgs>(dbProvider_SyncProcessFailed);
+                        (agent.RemoteProvider as RelationalSyncProvider).ApplyChangeFailed += new EventHandler<DbApplyChangeFailedEventArgs>
+                        (dbProvider_SyncProcessFailed);
+                        agent.Synchronize();
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Common.WriteLog(System.DateTime.Now.ToString() + ": " + ex.ToString());
             }
         }
 
@@ -83,27 +104,34 @@ namespace DatabaseSynch
             string serverConnectionString,
             string clientConnectionString)
         {
-            using (SqlConnection serverConnection = new
-                SqlConnection(serverConnectionString))
+            try
             {
-                using (SqlConnection clientConnection = new
-                    SqlConnection(clientConnectionString))
+                using (SqlConnection serverConnection = new
+    SqlConnection(serverConnectionString))
                 {
-                    SqlSyncScopeDeprovisioning serverDeprovisioning = new
-                         SqlSyncScopeDeprovisioning(serverConnection);
-                    SqlSyncScopeDeprovisioning clientDeprovisioning = new
-                        SqlSyncScopeDeprovisioning(clientConnection);
-                    serverDeprovisioning.DeprovisionScope(scopeName);
-                    serverDeprovisioning.DeprovisionStore();
-                    clientDeprovisioning.DeprovisionScope(scopeName);
-                    clientDeprovisioning.DeprovisionStore();
+                    using (SqlConnection clientConnection = new
+                        SqlConnection(clientConnectionString))
+                    {
+                        SqlSyncScopeDeprovisioning serverDeprovisioning = new
+                             SqlSyncScopeDeprovisioning(serverConnection);
+                        SqlSyncScopeDeprovisioning clientDeprovisioning = new
+                            SqlSyncScopeDeprovisioning(clientConnection);
+                        serverDeprovisioning.DeprovisionScope(scopeName);
+                        serverDeprovisioning.DeprovisionStore();
+                        clientDeprovisioning.DeprovisionScope(scopeName);
+                        clientDeprovisioning.DeprovisionStore();
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Common.WriteLog(System.DateTime.Now.ToString() + ": " + ex.ToString());
             }
         }
         private static void dbProvider_SyncProcessFailed
         (object sender, DbApplyChangeFailedEventArgs e)
         {
-            //Write your code here
+            //Common.WriteLog(System.DateTime.Now.ToString() + e.Context.ToString());
         }
 
         private static void dbProvider_SyncProgress(object sender, DbSyncProgressEventArgs e)
